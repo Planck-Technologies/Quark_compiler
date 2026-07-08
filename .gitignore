@@ -1,0 +1,25 @@
+# Python Virtual Environment
+.venv/
+venv/
+ENV/
+
+# Python caching
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Testing & Linting cache
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.ty_cache/
+
+# Agent Teaching Workspace & Notes
+lessons/
+reference/
+learning-records/
+assets/
+MISSION.md
+RESOURCES.md
+NOTES.md
+.agents/
