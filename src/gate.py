@@ -15,7 +15,7 @@ class GateType(enum.Enum):
 class Gate:
     """Represents a single quantum gate operation in a circuit."""
     
-    __slots__ = ("_gate_type", "target_qubits", "control_qubits", "all_qubits")
+    __slots__ = ("_gate_type", "_target_qubits", "_control_qubits", "_all_qubits")
     def __init__(
         self, 
         _gate_type: GateType, 
@@ -26,15 +26,15 @@ class Gate:
             raise ValueError("Gate must have at least one target qubit.")
             
         self._gate_type: GateType = _gate_type
-        self.target_qubits: Tuple[int, ...] = tuple(target_qubits)
-        self.control_qubits: Tuple[int, ...] = tuple(control_qubits) if control_qubits else ()
+        self._target_qubits: Tuple[int, ...] = tuple(target_qubits)
+        self._control_qubits: Tuple[int, ...] = tuple(control_qubits) if control_qubits else ()
         # make all qubits a frozenset for so that new qubits can be added to the set without mutating the original set.
-        self.all_qubits: frozenset[int] = frozenset(self.target_qubits).union(self.control_qubits)
+        self._all_qubits: frozenset[int] = frozenset(self._target_qubits).union(self._control_qubits)
         
         
         # Verify no qubit is used as both a target and a control simultaneously
-        if len(self.all_qubits) != (len(self.target_qubits) + len(self.control_qubits)):
-            raise ValueError(f"Overlapping qubits found in target {self.target_qubits} and control {self.control_qubits}")
+        if len(self._all_qubits) != (len(self._target_qubits) + len(self._control_qubits)):
+            raise ValueError(f"Overlapping qubits found in target {self._target_qubits} and control {self._control_qubits}")
 
     @property
     def is_self_inverse(self) -> bool:
@@ -46,6 +46,21 @@ class Gate:
     def gate_type(self) -> GateType:
         """Returns the type of the gate."""
         return self._gate_type
+    
+    @property
+    def target_qubits(self) -> Tuple[int, ...]:
+        """Returns the target qubits of the gate."""
+        return self._target_qubits
+
+    @property
+    def control_qubits(self) -> Tuple[int, ...]:
+        """Returns the control qubits of the gate."""
+        return self._control_qubits
+
+    @property
+    def all_qubits(self) -> frozenset[int]:
+        """Returns all qubits involved in the gate."""
+        return self._all_qubits
 
     def commutes_with(self, other: 'Gate') -> bool:
         """
