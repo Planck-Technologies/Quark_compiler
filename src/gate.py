@@ -1,4 +1,3 @@
-from typing import Tuple, Optional
 import enum
 
 
@@ -27,15 +26,15 @@ class Gate:
     def __init__(
         self,
         _gate_type: GateType,
-        target_qubits: Tuple[int, ...],
-        control_qubits: Optional[Tuple[int, ...]] = None,
+        target_qubits: tuple[int, ...],
+        control_qubits: tuple[int, ...] | None = None,
     ):
         if not target_qubits:
             raise ValueError("Gate must have at least one target qubit.")
 
         self._gate_type: GateType = _gate_type
-        self._target_qubits: Tuple[int, ...] = tuple(target_qubits)
-        self._control_qubits: Tuple[int, ...] = (
+        self._target_qubits: tuple[int, ...] = tuple(target_qubits)
+        self._control_qubits: tuple[int, ...] = (
             tuple(control_qubits) if control_qubits else ()
         )
         # Make all qubits a frozenset so that new qubits can be added to the
@@ -49,7 +48,8 @@ class Gate:
             len(self._target_qubits) + len(self._control_qubits)
         ):
             raise ValueError(
-                f"Overlapping qubits found in target {self._target_qubits} and control {self._control_qubits}"
+                f"Overlapping qubits found in target {self._target_qubits} "
+                f"and control {self._control_qubits}"
             )
 
     @property
@@ -70,12 +70,12 @@ class Gate:
         return self._gate_type
 
     @property
-    def target_qubits(self) -> Tuple[int, ...]:
+    def target_qubits(self) -> tuple[int, ...]:
         """Returns the target qubits of the gate."""
         return self._target_qubits
 
     @property
-    def control_qubits(self) -> Tuple[int, ...]:
+    def control_qubits(self) -> tuple[int, ...]:
         """Returns the control qubits of the gate."""
         return self._control_qubits
 
@@ -134,9 +134,13 @@ class Gate:
 
     def __repr__(self) -> str:
         controls: str = (
-            f" ctrl={list(self.control_qubits)}" if self.control_qubits else ""
+            f", ctrl={list(self.control_qubits)}" if self.control_qubits else ""
         )
-        return f"Gate({self._gate_type.value}, targets={list(self.target_qubits)}{controls})"
+        return (
+            f"Gate({self._gate_type.value},"
+            f" targets={list(self.target_qubits)}"
+            f"{controls})"
+        )
 
     def __hash__(self) -> int:
         return hash((self._gate_type, self.target_qubits, self.control_qubits))
