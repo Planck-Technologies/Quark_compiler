@@ -1,3 +1,5 @@
+"""Quantum gate definitions and commutation rules."""
+
 import enum
 
 
@@ -14,7 +16,15 @@ class GateType(enum.Enum):
 
 
 class Gate:
-    """Represents a single quantum gate operation in a circuit."""
+    """Represents a single quantum gate operation in a circuit.
+
+    Attributes:
+        gate_type: The type of the quantum gate.
+        target_qubits: Qubits that the gate acts on directly.
+        control_qubits: Qubits that control the gate operation.
+        all_qubits: The set of all qubits involved in this gate (both target
+            and control qubits).
+    """
 
     __slots__ = (
         "_gate_type",
@@ -29,6 +39,19 @@ class Gate:
         target_qubits: tuple[int, ...],
         control_qubits: tuple[int, ...] | None = None,
     ):
+        """Initializes a quantum gate.
+
+        Args:
+            _gate_type: The type of the gate.
+            target_qubits: Qubits that the gate acts on directly.
+            control_qubits: Qubits that control the gate operation.
+                Defaults to None.
+
+        Raises:
+            ValueError: If no target qubits are provided.
+            ValueError: If there are overlapping qubits between target and
+                control qubits.
+        """
         if not target_qubits:
             raise ValueError("Gate must have at least one target qubit.")
 
@@ -54,7 +77,12 @@ class Gate:
 
     @property
     def is_self_inverse(self) -> bool:
-        """Returns True if applying this gate twice results in Identity."""
+        """Checks if the gate is self-inverse.
+
+        Returns:
+            True if applying this gate twice results in the identity operation,
+            False otherwise.
+        """
         # H, X, Y, Z, and CNOT are self-inverse. S and T are not (S^2 = Z, T^2 = S).
         return self._gate_type in {
             GateType.H,
@@ -66,27 +94,48 @@ class Gate:
 
     @property
     def gate_type(self) -> GateType:
-        """Returns the type of the gate."""
+        """Gets the type of the gate.
+
+        Returns:
+            The GateType.
+        """
         return self._gate_type
 
     @property
     def target_qubits(self) -> tuple[int, ...]:
-        """Returns the target qubits of the gate."""
+        """Gets the target qubits of the gate.
+
+        Returns:
+            A tuple of target qubit indices.
+        """
         return self._target_qubits
 
     @property
     def control_qubits(self) -> tuple[int, ...]:
-        """Returns the control qubits of the gate."""
+        """Gets the control qubits of the gate.
+
+        Returns:
+            A tuple of control qubit indices.
+        """
         return self._control_qubits
 
     @property
     def all_qubits(self) -> frozenset[int]:
-        """Returns all qubits involved in the gate."""
+        """Gets all qubits involved in the gate.
+
+        Returns:
+            A frozenset containing all target and control qubit indices.
+        """
         return self._all_qubits
 
     def commutes_with(self, other: "Gate") -> bool:
-        """
-        Determines if this gate commutes with another gate.
+        """Determines if this gate commutes with another gate.
+
+        Args:
+            other: The other quantum gate.
+
+        Returns:
+            True if the gates commute, False otherwise.
         """
         # If they don't share any qubits, they always commute
         if not self.all_qubits.intersection(other.all_qubits):
@@ -124,6 +173,15 @@ class Gate:
         return False
 
     def __eq__(self, other: object) -> bool:
+        """Checks equality between this gate and another object.
+
+        Args:
+            other: The object to compare with.
+
+        Returns:
+            True if other is a Gate with the same type, target, and control
+            qubits; False otherwise.
+        """
         if not isinstance(other, Gate):
             return False
         return (
@@ -133,6 +191,11 @@ class Gate:
         )
 
     def __repr__(self) -> str:
+        """Gets a string representation of the gate.
+
+        Returns:
+            A string representation of the gate.
+        """
         controls: str = (
             f", ctrl={list(self.control_qubits)}" if self.control_qubits else ""
         )
@@ -143,4 +206,10 @@ class Gate:
         )
 
     def __hash__(self) -> int:
+        """Gets the hash value of the gate.
+
+        Returns:
+            An integer hash computed from gate_type, target_qubits, and
+            control_qubits.
+        """
         return hash((self._gate_type, self.target_qubits, self.control_qubits))

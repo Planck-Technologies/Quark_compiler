@@ -1,10 +1,12 @@
+"""Unit tests for the Gate class."""
+
 import pytest
 
 from src.gate import Gate, GateType
 
 
-def test_valid_gate_creation():
-    """Test that a valid gate sets up properties correctly."""
+def test_valid_gate_creation() -> None:
+    """Tests that a valid gate sets up properties correctly."""
     gate = Gate(GateType.CNOT, target_qubits=(1,), control_qubits=(0,))
     # Write assertions to verify gate_type, target_qubits, and control_qubits match
     assert gate.gate_type == GateType.CNOT
@@ -14,16 +16,16 @@ def test_valid_gate_creation():
     # Add assertions for targets, controls, and all_qubits here...
 
 
-def test_overlapping_qubits_raises_error():
-    """Test that a non-physical gate triggers a ValueError."""
+def test_overlapping_qubits_raises_error() -> None:
+    """Tests that a non-physical gate triggers a ValueError."""
     with pytest.raises(expected_exception=ValueError):
         Gate(GateType.CNOT, target_qubits=(0,), control_qubits=(0,))
         # Instantiate a gate where a qubit is both target and control
         pass
 
 
-def test_gate_immutability():
-    """Test that public properties cannot be overwritten."""
+def test_gate_immutability() -> None:
+    """Tests that public properties cannot be overwritten."""
     gate = Gate(GateType.X, target_qubits=(0,))
     with pytest.raises(expected_exception=AttributeError):
         gate.gate_type = GateType.H
@@ -45,20 +47,16 @@ def test_gate_immutability():
         pass
 
 
-def test_invalid_gate_no_target_qubits():
-    """
-    Test that creating a gate with no target qubits raises ValueError.
-    """
+def test_invalid_gate_no_target_qubits() -> None:
+    """Tests that creating a gate with no target qubits raises ValueError."""
     with pytest.raises(expected_exception=ValueError):
         Gate(GateType.H, target_qubits=(), control_qubits=None)
         # Instantiate a gate with no target qubits
         pass
 
 
-def test_gate_is_self_inverse():
-    """
-    Test the is_self_inverse property for self-inverse and non-self-inverse gates.
-    """
+def test_gate_is_self_inverse() -> None:
+    """Tests the is_self_inverse property for self-inverse and non-self-inverse gates."""
     self_inverse_gates = [
         Gate(GateType.X, target_qubits=(0,)),
         Gate(GateType.Z, target_qubits=(0,)),
@@ -75,11 +73,8 @@ def test_gate_is_self_inverse():
         assert not gate.is_self_inverse
 
 
-def test_gate_equality_and_hashing():
-    """
-    Verify that gate equality (__eq__) and hashing (__hash__) behave correctly.
-
-    """
+def test_gate_equality_and_hashing() -> None:
+    """Verifies that gate equality (__eq__) and hashing (__hash__) behave correctly."""
     two_identical_gates = [
         Gate(GateType.X, target_qubits=(0,)),
         Gate(GateType.X, target_qubits=(0,)),
@@ -101,10 +96,8 @@ def test_gate_equality_and_hashing():
     )
 
 
-def test_gate_repr():
-    """
-    Verify that __repr__ outputs the correct readable representation.
-    """
+def test_gate_repr() -> None:
+    """Verifies that __repr__ outputs the correct readable representation."""
     gate = Gate(GateType.H, target_qubits=(0,))
     assert repr(gate) == "Gate(H, targets=[0])"
     gate = Gate(GateType.CNOT, target_qubits=(1,), control_qubits=(0,))
@@ -164,8 +157,16 @@ def test_gate_repr():
         ),
     ],
 )
-def test_gate_commutation_rules(gate_a: Gate, gate_b: Gate, expected_commute: bool):
-    """Verify that commutation rules resolve correctly across different gate layouts."""
+def test_gate_commutation_rules(
+    gate_a: Gate, gate_b: Gate, expected_commute: bool
+) -> None:
+    """Verifies that commutation rules resolve correctly across different gate layouts.
+
+    Args:
+        gate_a: The first gate to compare.
+        gate_b: The second gate to compare.
+        expected_commute: True if they are expected to commute, False otherwise.
+    """
     assert gate_a.commutes_with(other=gate_b) == expected_commute
     # Commutation is symmetric (A commutes with B implies B commutes with A)
     assert gate_b.commutes_with(other=gate_a) == expected_commute

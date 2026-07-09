@@ -1,48 +1,57 @@
+"""Quantum circuit representation and management."""
+
 from src.gate import Gate
 
 
 class Circuit:
-    """Represents a quantum circuit consisting of multiple gates."""
+    """A quantum circuit consisting of multiple gates.
+
+    Attributes:
+        num_qubits: The number of qubits in the circuit.
+        gates: A tuple of gates in the circuit.
+    """
+
+    __slots__ = ("_num_qubits", "_gates")
 
     def __init__(self, num_qubits: int) -> None:
-        """
-        Initialize the Circuit.
+        """Initializes the Circuit with a specified number of qubits.
 
-        TODO:
-        1. Store num_qubits.
-        2. Initialize an internal list self._gates to track added gates.
+        Args:
+            num_qubits: The number of qubits in the circuit.
         """
-        # Your code here
-        pass
+        self._num_qubits = num_qubits
+        self._gates = []
 
     @property
     def num_qubits(self) -> int:
-        """
-        Returns the number of qubits in the circuit (read-only).
+        """Gets the number of qubits in the circuit (read-only).
 
-        TODO: Return the stored number of qubits.
+        Returns:
+            The number of qubits.
         """
-        # Your code here
-        return 0
+        return self._num_qubits
 
     @property
-    def gates(self) -> list[Gate]:
-        """
-        Returns the list of gates in the circuit.
+    def gates(self) -> tuple[Gate, ...]:
+        """Gets all the gates added to the circuit.
 
-        TODO: Return the internal gate tracking list.
+        Returns:
+            A tuple of Gate objects in the order they were added.
         """
-        # Your code here
-        return [Gate("X", (0,))]  # type: ignore
+        return tuple(self._gates)
 
     def add_gate(self, gate: Gate) -> None:
-        """
-        Adds a gate to the circuit after validating qubit boundaries.
+        """Adds a gate to the circuit after validating qubit boundaries.
 
-        TODO:
-        1. Iterate through gate.all_qubits.
-        2. Raise IndexError if any qubit index is >= self.num_qubits.
-        3. Append the gate to self._gates.
+        Args:
+            gate: The quantum gate to add.
+
+        Raises:
+            IndexError: If any qubit index involved in the gate is out of bounds
+                for this circuit.
         """
-        # Your code here
-        pass
+        for qubit in gate.all_qubits:
+            if qubit >= self._num_qubits:
+                raise IndexError("Qubit index out of bounds")
+        self._gates.append(gate)
+
