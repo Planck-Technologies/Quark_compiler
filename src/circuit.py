@@ -54,4 +54,3 @@ class Circuit:
             if qubit >= self._num_qubits:
                 raise IndexError("Qubit index out of bounds")
         self._gates.append(gate)
-
