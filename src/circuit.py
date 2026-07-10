@@ -1,5 +1,7 @@
 """Quantum circuit representation and management."""
 
+import networkx as nx
+
 from src.gate import Gate
 
 
@@ -54,3 +56,20 @@ class Circuit:
             if qubit >= self._num_qubits:
                 raise IndexError("Qubit index out of bounds")
         self._gates.append(gate)
+
+    def to_dag(self) -> nx.DiGraph:
+        """Converts the circuit into a Directed Acyclic Graph (DAG) representing gate dependencies.
+
+        Returns:
+            A networkx.DiGraph where nodes are unique (idx, gate) tuples.
+        """
+        dag = nx.DiGraph()
+        last_gate_on_wire = dict.fromkeys(range(self.num_qubits), None)
+        for idx, gate in enumerate(self._gates):
+            node_id = (idx, gate)
+            dag.add_node(node_id)
+            for qubit in gate.all_qubits:
+                if last_gate_on_wire[qubit] is not None:
+                    dag.add_edge(last_gate_on_wire[qubit], node_id)
+                last_gate_on_wire[qubit] = node_id
+        return dag

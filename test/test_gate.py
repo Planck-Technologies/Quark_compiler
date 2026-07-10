@@ -21,7 +21,6 @@ def test_overlapping_qubits_raises_error() -> None:
     with pytest.raises(expected_exception=ValueError):
         Gate(GateType.CNOT, target_qubits=(0,), control_qubits=(0,))
         # Instantiate a gate where a qubit is both target and control
-        pass
 
 
 def test_gate_immutability() -> None:
@@ -30,21 +29,20 @@ def test_gate_immutability() -> None:
     with pytest.raises(expected_exception=AttributeError):
         gate.gate_type = GateType.H
         # Try to manually change gate.gate_type to GateType.H
-        pass
+
     with pytest.raises(expected_exception=AttributeError):
         gate.target_qubits = (1,)
         # Try to manually change gate.target_qubits to (1,)
-        pass
+
     with pytest.raises(expected_exception=AttributeError):
         gate.control_qubits = (1,)
         # Try to manually change gate.control_qubits to (1,)
-        pass
+
     with pytest.raises(expected_exception=AttributeError):
         gate.all_qubits = {
             1,
         }
         # Try to manually change gate.all_qubits to {1,}
-        pass
 
 
 def test_invalid_gate_no_target_qubits() -> None:
@@ -52,7 +50,6 @@ def test_invalid_gate_no_target_qubits() -> None:
     with pytest.raises(expected_exception=ValueError):
         Gate(GateType.H, target_qubits=(), control_qubits=None)
         # Instantiate a gate with no target qubits
-        pass
 
 
 def test_gate_is_self_inverse() -> None:
