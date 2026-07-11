@@ -22,19 +22,6 @@ class GateCancellationPass:
             A new, optimized Circuit instance.
         """
         dag = circuit.to_dag()
-
-        # TODO:
-        # 1. Run a loop while changes are being made:
-        #    - Sort nodes topologically: sorted_nodes = list(nx.topological_sort(dag))
-        #    - Search for a self-inverse node that has a cancellation partner:
-        #      - For each node in sorted_nodes (if node in dag and node[1].is_self_inverse):
-        #        - Find its partner: partner = self._find_cancellation_partner(dag, node)
-        #        - If partner is not None:
-        #          - Rewire and remove both nodes: self._rewire_and_remove(dag, node, partner)
-        #          - Mark modified = True and break the inner loop to restart sorting.
-        #    - If no modifications were made, break the outer loop.
-
-        # 2. Rebuild and return the new Circuit instance from the remaining nodes in topological order.
         circ_new = Circuit(num_qubits=circuit.num_qubits)
         while True:
             sorted_nodes = list(nx.topological_sort(dag))
@@ -70,12 +57,6 @@ class GateCancellationPass:
             The successor node tuple (idx, gate) touching the qubit wire,
             or None if current_node is the last gate on that wire.
         """
-        # TODO:
-        # 1. Loop through all successors of current_node in the DAG using dag.successors(current_node).
-        # 2. For each successor node (which is a tuple (idx, gate)), check if the specified
-        #    qubit is involved in the successor's gate (qubit in successor_node[1].all_qubits).
-        # 3. If a match is found, return that successor node.
-        # 4. If the loop completes without finding a match, return None.
         for succ_node in dag.successors(current_node):
             if qubit in succ_node[1].all_qubits:
                 return succ_node
@@ -96,27 +77,6 @@ class GateCancellationPass:
             The matching node tuple (idx, gate) if one exists and commutes with all
             intervening gates, otherwise None.
         """
-        # TODO:
-        # 1. Get all qubits involved in this gate: qubits = node[1].all_qubits.
-        # 2. Pick a starting qubit to trace (e.g., next(iter(qubits))).
-        # 3. Trace forward along this qubit wire using self._next_node_on_wire:
-        #    - Set current = node.
-        #    - Loop:
-        #      - next_node = self._next_node_on_wire(dag, current, start_qubit)
-        #      - If next_node is None: return None.
-        #      - If next_node[1] == node[1]: we found a candidate partner node. Break and verify.
-        #      - If not, check if node[1].commutes_with(next_node[1]).
-        #      - If they do NOT commute: return None (blocked).
-        #      - Set current = next_node and repeat.
-        # 4. For any other qubits in the gate (e.g., the target or control of CNOT):
-        #    - Trace forward along that wire:
-        #      - Set current = node.
-        #      - Loop:
-        #        - next_node = self._next_node_on_wire(dag, current, other_qubit)
-        #        - If next_node == candidate_partner: this wire is clear. Break.
-        #        - If next_node is None or not node[1].commutes_with(next_node[1]): return None.
-        #        - Set current = next_node and repeat.
-        # 5. If all wires are clear, return candidate_partner.
         involved_qubits = list(node[1].all_qubits)
         current = node
         candidate_partner = None
@@ -155,22 +115,6 @@ class GateCancellationPass:
             node1: The first node tuple to cancel.
             node2: The second node tuple to cancel.
         """
-        # TODO:
-        # 1. Get the list of all qubits involved in node1's gate: qubits = list(node1[1].all_qubits).
-        # 2. For each qubit q in qubits:
-        #    - Find the immediate predecessor of node1 on wire q:
-        #      - Loop through dag.predecessors(node1) and find p such that q in p[1].all_qubits.
-        #    - Find the immediate successor of node1 on wire q: next_q = self._next_node_on_wire(dag, node1, q).
-        #    - If next_q == node2 (they are adjacent on wire q):
-        #      - Find the successor of node2 on wire q: succ_q = self._next_node_on_wire(dag, node2, q).
-        #      - Connect pred_q directly to succ_q if both are not None.
-        #    - Else (if there are intervening gates on wire q):
-        #      - Connect pred_q directly to next_q (the first intervening gate).
-        #      - Find the predecessor of node2 on wire q (the last intervening gate):
-        #        - Loop through dag.predecessors(node2) and find p_node2 such that q in p_node2[1].all_qubits.
-        #      - Find the successor of node2 on wire q: succ_q = self._next_node_on_wire(dag, node2, q).
-        #      - Connect p_node2 directly to succ_q if both are not None.
-        # 3. Remove node1 and node2 from the DAG using dag.remove_node().
         qubits = list(node1[1].all_qubits)
         for q in qubits:
             pred_node_1 = next(

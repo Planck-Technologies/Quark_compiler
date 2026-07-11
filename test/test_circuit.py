@@ -31,18 +31,7 @@ def test_add_gate_out_of_bounds() -> None:
 
 
 def test_to_dag_topological_sort() -> None:
-    """Test that to_dag creates a DAG that topologically sorts in causal order.
-
-    TODO:
-    1. Create a Circuit on 3 qubits.
-    2. Add H on qubit 0, CNOT on target 1 (control 0), and X on qubit 1.
-    3. Generate the DAG using circuit.to_dag().
-    4. Import networkx and run networkx.topological_sort(dag) to get the sorted list of nodes.
-    5. Assert that the length of the sorted list is 3.
-    6. Verify the causal order:
-       - The H gate on qubit 0 must appear before the CNOT gate.
-       - The CNOT gate must appear before the X gate on qubit 1.
-    """
+    """Test that to_dag creates a DAG that topologically sorts in causal order."""
     circ = Circuit(3)
     h_gate = Gate(GateType.H, (0,))
     cnot_gate = Gate(GateType.CNOT, (1,), (0,))
