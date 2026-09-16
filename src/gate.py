@@ -1,6 +1,7 @@
 """Quantum gate definitions and commutation rules."""
 
 import enum
+import math
 
 
 class GateType(enum.Enum):
@@ -71,9 +72,12 @@ class Gate:
         if not target_qubits:
             raise ValueError("Gate must have at least one target qubit.")
 
-        # TODO: Validate that parametric gate types (RZ, RX, RY) receive an angle,
-        # and that non-parametric gate types do NOT receive an angle.
-        # Raise ValueError with a descriptive message in each invalid case.
+        if _gate_type in self._PARAMETRIC_TYPES:
+            if angle is None:
+                raise ValueError(f"Parametric gate {_gate_type} requires an angle.")
+        else:
+            if angle is not None:
+                raise ValueError(f"Non-parametric gate {_gate_type} does not accept an angle.")
 
         self._gate_type: GateType = _gate_type
         self._target_qubits: tuple[int, ...] = tuple(target_qubits)
@@ -135,9 +139,14 @@ class Gate:
         Returns:
             True if this gate is effectively a no-op.
         """
-        # TODO: Implement this property.
-        # Hint: Use math.pi and check if angle % (2 * math.pi) is approximately 0.
-        raise NotImplementedError("TODO: Implement is_identity")
+        if self._angle is None:
+            return False
+
+        normalized_angle = self._angle % (2 * math.pi)
+        if normalized_angle > math.pi:
+            normalized_angle -= 2 * math.pi
+
+        return abs(normalized_angle) < 1e-10
 
     @property
     def inverse(self) -> "Gate":
@@ -153,10 +162,17 @@ class Gate:
         Raises:
             NotImplementedError: If inverse is not defined for this gate type.
         """
-        # TODO: Implement this property.
-        # Hint: Handle each gate type. Self-inverse gates return Gate(same_type, same_qubits).
-        # S -> RZ(-π/2), T -> RZ(-π/4), RZ(θ) -> RZ(-θ), etc.
-        raise NotImplementedError("TODO: Implement inverse")
+        if self.is_self_inverse:
+            return Gate(self._gate_type, target_qubits=self._target_qubits, control_qubits=self._control_qubits)
+
+        if self._gate_type == GateType.S:
+            return Gate(GateType.RZ, target_qubits=self._target_qubits, control_qubits=self._control_qubits, angle=-math.pi / 2)
+        elif self._gate_type == GateType.T:
+            return Gate(GateType.RZ, target_qubits=self._target_qubits, control_qubits=self._control_qubits, angle=-math.pi / 4)
+        elif self._gate_type in self._PARAMETRIC_TYPES:
+            return Gate(self._gate_type, target_qubits=self._target_qubits, control_qubits=self._control_qubits, angle=-self._angle)
+
+        raise NotImplementedError(f"Inverse not implemented for {self._gate_type}")
 
     def merge_with(self, other: "Gate") -> "Gate | None":
         """Attempts to merge this gate with another same-axis rotation gate.
@@ -175,15 +191,46 @@ class Gate:
         Raises:
             ValueError: If the gates cannot be merged (different axes or qubits).
         """
-        # TODO: Implement this method.
-        # Hint:
-        # 1. Verify both gates act on the same qubits.
-        # 2. Convert each gate to its equivalent angle:
-        #    Z = π, S = π/2, T = π/4, RZ(θ) = θ, X = π, RX(θ) = θ, etc.
-        # 3. Sum the angles.
-        # 4. If the sum is ≈ 0 mod 2π, return None (identity).
-        # 5. Otherwise, return a new parametric gate (e.g., RZ) with the summed angle.
-        raise NotImplementedError("TODO: Implement merge_with")
+        if self.target_qubits != other.target_qubits or self.control_qubits != other.control_qubits:
+            raise ValueError("Gates must act on the same qubits to be merged.")
+
+        z_family = {GateType.Z, GateType.S, GateType.T, GateType.RZ}
+        x_family = {GateType.X, GateType.RX}
+        y_family = {GateType.Y, GateType.RY}
+
+        if self._gate_type in z_family and other._gate_type in z_family:
+            target_gate = GateType.RZ
+        elif self._gate_type in x_family and other._gate_type in x_family:
+            target_gate = GateType.RX
+        elif self._gate_type in y_family and other._gate_type in y_family:
+            target_gate = GateType.RY
+        else:
+            raise ValueError("Gates must be on the same rotation axis to be merged.")
+
+        def get_angle(gate: "Gate") -> float:
+            if gate._gate_type in {GateType.Z, GateType.X, GateType.Y}:
+                return math.pi
+            elif gate._gate_type == GateType.S:
+                return math.pi / 2
+            elif gate._gate_type == GateType.T:
+                return math.pi / 4
+            elif gate._gate_type in {GateType.RZ, GateType.RX, GateType.RY}:
+                return gate._angle
+            return 0.0
+
+        total_angle = get_angle(self) + get_angle(other)
+
+        merged_gate = Gate(
+            target_gate,
+            target_qubits=self.target_qubits,
+            control_qubits=self.control_qubits,
+            angle=total_angle
+        )
+
+        if merged_gate.is_identity:
+            return None
+
+        return merged_gate
 
     @property
     def gate_type(self) -> GateType:
@@ -243,11 +290,14 @@ class Gate:
         if self._gate_type in z_basis and other._gate_type in z_basis:
             return True
 
-        # TODO: Add commutation rules for RX and RY:
-        # - RX commutes with X on the same qubit (same axis).
-        # - RY commutes with Y on the same qubit (same axis).
-        # - RX commutes with other RX gates on the same qubit.
-        # - RY commutes with other RY gates on the same qubit.
+        # Add commutation rules for RX and RY:
+        x_basis: set[GateType] = {GateType.X, GateType.RX}
+        if self._gate_type in x_basis and other._gate_type in x_basis:
+            return True
+
+        y_basis: set[GateType] = {GateType.Y, GateType.RY}
+        if self._gate_type in y_basis and other._gate_type in y_basis:
+            return True
 
         # Helper function to check asymmetric commutation rules
         def commutes_asymmetric(g1: "Gate", g2: "Gate") -> bool:

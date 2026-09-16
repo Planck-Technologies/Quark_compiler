@@ -23,20 +23,87 @@ class GateCancellationPass:
         """
         dag = circuit.to_dag()
         circ_new = Circuit(num_qubits=circuit.num_qubits)
+
+        # Generator for a unique ID for new nodes
+        def _get_new_id(d):
+            if not d.nodes:
+                return 0
+            return max(n[0] for n in d.nodes) + 1
+
         while True:
             sorted_nodes = list(nx.topological_sort(dag))
             modified = False
             for node in sorted_nodes:
-                if node in dag and node[1].is_self_inverse:
-                    partner = self._find_cancellation_partner(dag, node)
-                    if partner is not None:
+                if node not in dag:
+                    continue
+                partner = self._find_cancellation_partner(dag, node)
+                if partner is not None:
+                    try:
+                        merged_gate = node[1].merge_with(partner[1])
+                    except ValueError:
+                        # Cannot be merged (e.g. they are not on the same axis)
+                        if node[1] == partner[1] and node[1].is_self_inverse:
+                            # Self-inverse cancellation
+                            self._rewire_and_remove(dag, node, partner)
+                            modified = True
+                            break
+                        continue
+
+                    if merged_gate is None:
+                        # Identity, remove both
                         self._rewire_and_remove(dag, node, partner)
                         modified = True
                         break
+                    else:
+                        # We have a valid merged_gate that is not identity.
+                        # We will replace `node` with `new_node` in the same topological position,
+                        # and remove `partner` by rewiring its edges exactly like `_rewire_and_remove`
+                        # would if we were cancelling it.
+                        new_node = (_get_new_id(dag), merged_gate)
+                        dag.add_node(new_node)
+
+                        # Replace `node` with `new_node` directly
+                        for p in list(dag.predecessors(node)):
+                            dag.add_edge(p, new_node)
+                        for s in list(dag.successors(node)):
+                            # Only add if it's not partner (though partner is usually further down)
+                            if s != partner:
+                                dag.add_edge(new_node, s)
+
+                        # The partner's predecessors and successors need to be bridged around partner
+                        # just like in _rewire_and_remove, but we must make sure if node was
+                        # its predecessor, we bridge from new_node instead.
+                        qubits = list(partner[1].all_qubits)
+                        for q in qubits:
+                            pred_node_2 = next(
+                                (
+                                    p
+                                    for p in dag.predecessors(partner)
+                                    if q in p[1].all_qubits
+                                ),
+                                None,
+                            )
+                            succ_node_2 = self._next_node_on_wire(dag, partner, q)
+
+                            # If the immediate predecessor is the original `node`, use `new_node`
+                            if pred_node_2 == node:
+                                pred_node_2 = new_node
+
+                            if pred_node_2 is not None and succ_node_2 is not None:
+                                # Ensure we don't accidentally create self-loops
+                                if pred_node_2 != succ_node_2:
+                                    dag.add_edge(pred_node_2, succ_node_2)
+
+                        dag.remove_node(node)
+                        dag.remove_node(partner)
+
+                        modified = True
+                        break
+
             if not modified:
                 break
 
-        for _, gate in sorted_nodes:
+        for _, gate in nx.topological_sort(dag):
             circ_new.add_gate(gate)
         return circ_new
 
@@ -67,7 +134,7 @@ class GateCancellationPass:
         dag: nx.DiGraph,
         node: tuple[int, Gate],
     ) -> tuple[int, Gate] | None:
-        """Looks ahead along the qubit wires to find an identical gate that can commute to meet this node.
+        """Looks ahead along the qubit wires to find a gate that can commute to meet this node and can be merged or cancelled.
 
         Args:
             dag: The dependency graph (DAG).
@@ -85,12 +152,24 @@ class GateCancellationPass:
             next_node = self._next_node_on_wire(dag, current, start_qubit)
             if next_node is None:
                 return None
-            if next_node[1] == node[1]:
-                candidate_partner = next_node
-                break
+
+            # Check if it's a potential merge partner: acts on exactly the same qubits
+            if next_node[1].target_qubits == node[1].target_qubits and next_node[1].control_qubits == node[1].control_qubits:
+                # It must either be identical (for cancellation) or mergeable
+                try:
+                    node[1].merge_with(next_node[1])
+                    is_mergeable = True
+                except ValueError:
+                    is_mergeable = False
+
+                if next_node[1] == node[1] or is_mergeable:
+                    candidate_partner = next_node
+                    break
+
             if not node[1].commutes_with(next_node[1]):
                 return None
             current = next_node
+
         for other_qubit in involved_qubits[1:]:
             current = node
             while True:

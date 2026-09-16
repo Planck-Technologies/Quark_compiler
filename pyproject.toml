@@ -36,3 +36,8 @@ exclude = ["test"]
 testpaths = ["test"]
 pythonpath = "."
 addopts = "-v --cov=src --cov-report=term-missing"
+
+[dependency-groups]
+dev = [
+    "networkx>=3.6.1",
+]
