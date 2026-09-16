@@ -265,3 +265,15 @@ def test_commutation_rules_extended():
     assert not gate_rx.commutes_with(
         Gate(GateType.RZ, target_qubits=(0,), angle=math.pi)
     )
+
+
+def test_inverse_unsupported_gate_type() -> None:
+    """Tests that an unsupported gate type raises NotImplementedError when getting inverse."""
+    gate = Gate(GateType.X, target_qubits=(0,))
+    # Mock the internal state to an unsupported value
+    gate._gate_type = "UNSUPPORTED"
+
+    with pytest.raises(
+        NotImplementedError, match="Inverse not implemented for UNSUPPORTED"
+    ):
+        _ = gate.inverse
