@@ -1,5 +1,7 @@
 """Unit tests for the Gate class."""
 
+import math
+
 import pytest
 
 from src.gate import Gate, GateType
@@ -168,7 +170,6 @@ def test_gate_commutation_rules(
     # Commutation is symmetric (A commutes with B implies B commutes with A)
     assert gate_b.commutes_with(other=gate_a) == expected_commute
 
-import math
 
 def test_parametric_gate_validation():
     with pytest.raises(ValueError, match="requires an angle"):
@@ -179,6 +180,7 @@ def test_parametric_gate_validation():
 
     gate = Gate(GateType.RZ, target_qubits=(0,), angle=math.pi)
     assert gate.angle == math.pi
+
 
 def test_is_identity():
     gate_not_id = Gate(GateType.RZ, target_qubits=(0,), angle=math.pi)
@@ -195,6 +197,7 @@ def test_is_identity():
 
     gate_x = Gate(GateType.X, target_qubits=(0,))
     assert not gate_x.is_identity
+
 
 def test_inverse():
     gate_x = Gate(GateType.X, target_qubits=(0,))
@@ -217,6 +220,7 @@ def test_inverse():
     assert inv_rz.gate_type == GateType.RZ
     assert math.isclose(inv_rz.angle, -math.pi / 3)
 
+
 def test_merge_with():
     gate_z = Gate(GateType.Z, target_qubits=(0,))
     gate_s = Gate(GateType.S, target_qubits=(0,))
@@ -229,13 +233,14 @@ def test_merge_with():
     gate_x = Gate(GateType.X, target_qubits=(0,))
     gate_rx = Gate(GateType.RX, target_qubits=(0,), angle=-math.pi)
     merged_x_rx = gate_x.merge_with(gate_rx)
-    assert merged_x_rx is None # Identity because pi - pi = 0
+    assert merged_x_rx is None  # Identity because pi - pi = 0
 
     with pytest.raises(ValueError, match="same qubits"):
         gate_x.merge_with(Gate(GateType.X, target_qubits=(1,)))
 
     with pytest.raises(ValueError, match="same rotation axis"):
         gate_x.merge_with(gate_z)
+
 
 def test_commutation_rules_extended():
     gate_x = Gate(GateType.X, target_qubits=(0,))
@@ -257,4 +262,6 @@ def test_commutation_rules_extended():
     # Cross axes shouldn't commute
     assert not gate_x.commutes_with(gate_y)
     assert not gate_rx.commutes_with(gate_ry)
-    assert not gate_rx.commutes_with(Gate(GateType.RZ, target_qubits=(0,), angle=math.pi))
+    assert not gate_rx.commutes_with(
+        Gate(GateType.RZ, target_qubits=(0,), angle=math.pi)
+    )

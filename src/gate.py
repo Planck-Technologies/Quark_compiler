@@ -77,7 +77,9 @@ class Gate:
                 raise ValueError(f"Parametric gate {_gate_type} requires an angle.")
         else:
             if angle is not None:
-                raise ValueError(f"Non-parametric gate {_gate_type} does not accept an angle.")
+                raise ValueError(
+                    f"Non-parametric gate {_gate_type} does not accept an angle."
+                )
 
         self._gate_type: GateType = _gate_type
         self._target_qubits: tuple[int, ...] = tuple(target_qubits)
@@ -162,17 +164,40 @@ class Gate:
         Raises:
             NotImplementedError: If inverse is not defined for this gate type.
         """
-        if self.is_self_inverse:
-            return Gate(self._gate_type, target_qubits=self._target_qubits, control_qubits=self._control_qubits)
-
-        if self._gate_type == GateType.S:
-            return Gate(GateType.RZ, target_qubits=self._target_qubits, control_qubits=self._control_qubits, angle=-math.pi / 2)
-        elif self._gate_type == GateType.T:
-            return Gate(GateType.RZ, target_qubits=self._target_qubits, control_qubits=self._control_qubits, angle=-math.pi / 4)
-        elif self._gate_type in self._PARAMETRIC_TYPES:
-            return Gate(self._gate_type, target_qubits=self._target_qubits, control_qubits=self._control_qubits, angle=-self._angle)
-
-        raise NotImplementedError(f"Inverse not implemented for {self._gate_type}")
+        match self._gate_type:
+            case gt if self.is_self_inverse:
+                return Gate(
+                    gt,
+                    target_qubits=self._target_qubits,
+                    control_qubits=self._control_qubits,
+                )
+            case GateType.S:
+                return Gate(
+                    GateType.RZ,
+                    target_qubits=self._target_qubits,
+                    control_qubits=self._control_qubits,
+                    angle=-math.pi / 2,
+                )
+            case GateType.T:
+                return Gate(
+                    GateType.RZ,
+                    target_qubits=self._target_qubits,
+                    control_qubits=self._control_qubits,
+                    angle=-math.pi / 4,
+                )
+            case gt if gt in self._PARAMETRIC_TYPES:
+                if self._angle is None:
+                    raise ValueError(f"Parametric gate {gt} requires an angle.")
+                return Gate(
+                    gt,
+                    target_qubits=self._target_qubits,
+                    control_qubits=self._control_qubits,
+                    angle=-self._angle,
+                )
+            case _:
+                raise NotImplementedError(
+                    f"Inverse not implemented for {self._gate_type}"
+                )
 
     def merge_with(self, other: "Gate") -> "Gate | None":
         """Attempts to merge this gate with another same-axis rotation gate.
@@ -191,7 +216,10 @@ class Gate:
         Raises:
             ValueError: If the gates cannot be merged (different axes or qubits).
         """
-        if self.target_qubits != other.target_qubits or self.control_qubits != other.control_qubits:
+        if (
+            self.target_qubits != other.target_qubits
+            or self.control_qubits != other.control_qubits
+        ):
             raise ValueError("Gates must act on the same qubits to be merged.")
 
         z_family = {GateType.Z, GateType.S, GateType.T, GateType.RZ}
@@ -224,7 +252,7 @@ class Gate:
             target_gate,
             target_qubits=self.target_qubits,
             control_qubits=self.control_qubits,
-            angle=total_angle
+            angle=total_angle,
         )
 
         if merged_gate.is_identity:

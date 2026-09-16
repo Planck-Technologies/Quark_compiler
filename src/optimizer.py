@@ -154,7 +154,10 @@ class GateCancellationPass:
                 return None
 
             # Check if it's a potential merge partner: acts on exactly the same qubits
-            if next_node[1].target_qubits == node[1].target_qubits and next_node[1].control_qubits == node[1].control_qubits:
+            if (
+                next_node[1].target_qubits == node[1].target_qubits
+                and next_node[1].control_qubits == node[1].control_qubits
+            ):
                 # It must either be identical (for cancellation) or mergeable
                 try:
                     node[1].merge_with(next_node[1])
