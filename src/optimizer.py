@@ -24,11 +24,13 @@ class GateCancellationPass:
         dag = circuit.to_dag()
         circ_new = Circuit(num_qubits=circuit.num_qubits)
 
+        max_id = max((n[0] for n in dag.nodes), default=-1)
+
         # Generator for a unique ID for new nodes
-        def _get_new_id(d):
-            if not d.nodes:
-                return 0
-            return max(n[0] for n in d.nodes) + 1
+        def _get_new_id():
+            nonlocal max_id
+            max_id += 1
+            return max_id
 
         while True:
             sorted_nodes = list(nx.topological_sort(dag))
@@ -59,7 +61,7 @@ class GateCancellationPass:
                         # We will replace `node` with `new_node` in the same topological position,
                         # and remove `partner` by rewiring its edges exactly like `_rewire_and_remove`
                         # would if we were cancelling it.
-                        new_node = (_get_new_id(dag), merged_gate)
+                        new_node = (_get_new_id(), merged_gate)
                         dag.add_node(new_node)
 
                         # Replace `node` with `new_node` directly
