@@ -148,7 +148,7 @@ class Gate:
         if normalized_angle > math.pi:
             normalized_angle -= 2 * math.pi
 
-        return abs(normalized_angle) < 1e-10
+        return math.isclose(normalized_angle, 0.0, abs_tol=1e-10)
 
     @property
     def inverse(self) -> "Gate":
