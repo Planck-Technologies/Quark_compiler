@@ -235,6 +235,13 @@ def test_merge_with():
     merged_x_rx = gate_x.merge_with(gate_rx)
     assert merged_x_rx is None  # Identity because pi - pi = 0
 
+    gate_y = Gate(GateType.Y, target_qubits=(0,))
+    gate_ry = Gate(GateType.RY, target_qubits=(0,), angle=math.pi / 4)
+    merged_y_ry = gate_y.merge_with(gate_ry)
+    assert merged_y_ry is not None
+    assert merged_y_ry.gate_type == GateType.RY
+    assert math.isclose(merged_y_ry.angle, math.pi + math.pi / 4)
+
     with pytest.raises(ValueError, match="same qubits"):
         gate_x.merge_with(Gate(GateType.X, target_qubits=(1,)))
 
