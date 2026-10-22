@@ -220,6 +220,13 @@ def test_inverse():
     assert inv_rz.gate_type == GateType.RZ
     assert math.isclose(inv_rz.angle, -math.pi / 3)
 
+    gate_cu1 = Gate(GateType.CU1, target_qubits=(1,), control_qubits=(0,), angle=math.pi / 6)
+    inv_cu1 = gate_cu1.inverse
+    assert inv_cu1.gate_type == GateType.CU1
+    assert inv_cu1.target_qubits == (1,)
+    assert inv_cu1.control_qubits == (0,)
+    assert math.isclose(inv_cu1.angle, -math.pi / 6)
+
 
 def test_merge_with():
     gate_z = Gate(GateType.Z, target_qubits=(0,))
